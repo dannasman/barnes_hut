@@ -15,7 +15,8 @@ fn main() {
         }
     }
     let now = Instant::now();
-    barnes_hut::tree_construction(&particles, &mut cell);
+    cell.tree_construction(&particles);
     let elapsed = now.elapsed();
     println!("Time elapsed: {:?}", elapsed);
+    println!("Root cell count: {:?}", cell.count);
 }
