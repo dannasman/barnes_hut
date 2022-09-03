@@ -2,12 +2,16 @@ const K: f64 = 8.988;
 
 #[derive(Debug, Clone)]
 pub struct Vector    {
-    x: f64,
-    y: f64,
-    z: f64,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
 }
 
 impl Vector  {
+    pub fn magnitude(&self) -> f64  {
+        return self.x*self.x+self.y*self.y+self.z+self.z;
+    }
+
     //squared distance
     pub fn distance(&self, pt: &Vector) -> f64 {
         return (self.x-pt.x)*(self.x-pt.x)+(self.y-pt.y)*(self.y-pt.y)+(self.z-pt.z)*(self.z-pt.z);
@@ -45,17 +49,17 @@ impl Vector  {
 
 #[derive(Debug, Clone)]
 pub struct Particle {
-    position: Vector,
+    pub position: Vector,
     charge: f64,
 }
 
 impl Particle   {
-    pub fn coulomb_force(&self, p: Particle) -> Vector  {
+    /*pub fn coulomb_force(&self, p: Particle) -> Vector  {
         let r_magnitude = self.position.distance(&p.position);
         let d = self.position.vector_distance(&p.position);
         let scalar = self.charge*p.charge*K/r_magnitude;
         return d.scalar_multiplication(scalar);
-    }
+    }*/
 
     pub fn new(x: f64, y: f64, z: f64, q: f64) -> Particle  {
         return Particle {
@@ -68,13 +72,13 @@ impl Particle   {
 
 #[derive(Debug, Clone)]
 pub struct Cell  {
-    pub children: Vec<Cell>,
-    pub particle: Option<Particle>,
-    pub count: f64,
-    pub length: f64,
-    pub base: Vector,
-    pub charge: f64,
-    pub center_of_mass: Vector
+    children: Vec<Cell>,
+    particle: Option<Particle>,
+    count: f64,
+    length: f64,
+    base: Vector,
+    charge: f64,
+    center_of_charge: Vector
 }
 
 impl Cell   {
@@ -95,7 +99,7 @@ impl Cell   {
             length: length,
             base: base,
             charge: 0.0,
-            center_of_mass: Vector::new(0.0, 0.0, 0.0)
+            center_of_charge: Vector::new(0.0, 0.0, 0.0)
         }
     }
 
@@ -113,7 +117,7 @@ impl Cell   {
 
     pub fn insert_particle(&mut self, particle: &Particle)  {
         if self.count > 1.0 {
-            let mut subcell = self.children.iter_mut().find(|c| c.is_inside(&particle.position));
+            let subcell = self.children.iter_mut().find(|c| c.is_inside(&particle.position));
             match subcell {
                 Some(c) => {
                     c.insert_particle(particle);
@@ -136,7 +140,7 @@ impl Cell   {
             }
             self.particle = None;
 
-            let mut subcell = self.children.iter_mut().find(|c| c.is_inside(&particle.position));
+            let subcell = self.children.iter_mut().find(|c| c.is_inside(&particle.position));
             match subcell   {
                 Some(c) => {
                     c.insert_particle(particle);
@@ -154,6 +158,50 @@ impl Cell   {
     pub fn tree_construction(&mut self, particles: &Vec<Particle>)  {
         for particle in particles.iter()    {
             self.insert_particle(particle);
+        }
+    }
+
+    pub fn calculate_charge_distribution(&mut self) {
+        if self.count == 0.0  {
+            return;
+        }
+        else if self.count == 1.0  {
+            match &self.particle {
+                Some(p) => {
+                    self.center_of_charge = p.position.clone();
+                    self.charge = p.charge;
+                },
+                None => (),
+            }
+        }
+        else    {
+            for child in self.children.iter_mut()    {
+                child.calculate_charge_distribution();
+                self.charge += child.charge;
+                self.center_of_charge = self.center_of_charge.add(&child.center_of_charge.scalar_multiplication(child.charge));
+            }
+            self.center_of_charge = self.center_of_charge.scalar_multiplication(1.0/self.charge);
+        }
+    }
+
+    pub fn calculate_coulomb_force(&self, particle: &Particle, accuracy_parameter: f64) -> Vector  {
+
+        let r_magnitude = self.center_of_charge.distance(&particle.position);
+        let mut force = Vector::new(0.0, 0.0, 0.0);
+        if r_magnitude == 0.0 || self.count == 0.0 {
+            return force;
+        }
+        else if self.count == 1.0 || self.length / r_magnitude < accuracy_parameter {
+            let distance = particle.position.vector_distance(&self.center_of_charge);
+            let scalar = self.charge*particle.charge*K/r_magnitude;
+            force = distance.scalar_multiplication(scalar);
+            return force;
+        }
+        else    {
+            for child in self.children.iter()   {
+                force = force.add(&child.calculate_coulomb_force(particle, accuracy_parameter));
+            }
+            return force;
         }
     }
 }
