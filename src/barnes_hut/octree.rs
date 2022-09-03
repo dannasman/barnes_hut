@@ -1,74 +1,7 @@
+use super::particle::Particle;
+use super::vector::Vector;
+
 const K: f64 = 8.988;
-
-#[derive(Debug, Clone)]
-pub struct Vector    {
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
-}
-
-impl Vector  {
-    pub fn magnitude(&self) -> f64  {
-        return self.x*self.x+self.y*self.y+self.z+self.z;
-    }
-
-    //squared distance
-    pub fn distance(&self, pt: &Vector) -> f64 {
-        return (self.x-pt.x)*(self.x-pt.x)+(self.y-pt.y)*(self.y-pt.y)+(self.z-pt.z)*(self.z-pt.z);
-    }
-
-    //vector distance
-    pub fn vector_distance(&self, pt: &Vector) -> Vector {
-        return Vector {
-            x: self.x-pt.x,
-            y: self.y-pt.y,
-            z: self.z-pt.z
-        };
-    }
-
-    pub fn scalar_multiplication(&self, scalar: f64) -> Vector {
-        return Vector   {
-            x: scalar*self.x,
-            y: scalar*self.y,
-            z: scalar*self.z
-        }
-    }
-
-    pub fn add(&self, pt: &Vector) -> Vector    {
-        return Vector   {
-            x: self.x+pt.x,
-            y: self.y+pt.y,
-            z: self.z+pt.z
-        }
-    }
-
-    pub fn new(x: f64, y: f64, z: f64) -> Vector    {
-        return Vector {x, y, z};
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Particle {
-    pub position: Vector,
-    charge: f64,
-}
-
-impl Particle   {
-    /*pub fn coulomb_force(&self, p: Particle) -> Vector  {
-        let r_magnitude = self.position.distance(&p.position);
-        let d = self.position.vector_distance(&p.position);
-        let scalar = self.charge*p.charge*K/r_magnitude;
-        return d.scalar_multiplication(scalar);
-    }*/
-
-    pub fn new(x: f64, y: f64, z: f64, q: f64) -> Particle  {
-        return Particle {
-            position: Vector::new(x, y, z),
-            charge: q
-        }
-    }
-}
-
 
 #[derive(Debug, Clone)]
 pub struct Cell  {
@@ -185,7 +118,6 @@ impl Cell   {
     }
 
     pub fn calculate_coulomb_force(&self, particle: &Particle, accuracy_parameter: f64) -> Vector  {
-
         let r_magnitude = self.center_of_charge.distance(&particle.position);
         let mut force = Vector::new(0.0, 0.0, 0.0);
         if r_magnitude == 0.0 || self.count == 0.0 {
