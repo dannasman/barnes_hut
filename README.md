@@ -9,3 +9,5 @@ Use the algorithm on particles in file `foo.txt` that contains particle position
 ```
 cargo run -- foo.txt
 ```
+## Further reading
+More about the implementation [here](https://dannasman.github.io/barnes-hut-algorithm).
